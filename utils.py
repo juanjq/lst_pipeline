@@ -15,7 +15,7 @@ def add_dl1_paths_to_dict(DICT, dl1_root, dchecking=False):
     """
 
     str_dchecks = "" if not dchecking else "datacheck_"
-    log_errors  = f"# error logs dl1 {str_dchecks[:-1]}"
+    log_errors  = ""
     print(f"\nAdding dl1 {str_dchecks[:-1]} data to dictionary...")
     
     total_dl1a_runwise      = glob.glob(dl1_root + f"{str_dchecks}dl1_LST-1.Run?????.h5")
@@ -90,15 +90,25 @@ def add_dl1_paths_to_dict(DICT, dl1_root, dchecking=False):
         else:
             subrun_paths = []
 
-        DICT[run][f"dl1a_{str_dchecks}run"]    = run_path
-        DICT[run][f"dl1a_{str_dchecks}subrun"] = subrun_paths
+        # checking if the branch of dict exists
+        try: 
+            str_dchecks_dict = "dl1" if not dchecking else "dchecks"
+            DICT[run][str_dchecks_dict]["runwise"]    = run_path
+            DICT[run][str_dchecks_dict]["srunwise"] = subrun_paths
+        except KeyError:
+            DICT[run][str_dchecks_dict] = {
+                "runwise"  : run_path, 
+                "srunwise" : subrun_paths,
+            }
 
         # adding a log error if do not exist in the case that there has been errors
-        if log_errors != f"# error logs dl1 {str_dchecks[:-1]}":
+        if log_errors != "":
             try:
-                DICT[run]["errors"] = DICT[run]["errors"] + "\n" + log_errors + "\n"
+                DICT[run]["errors"] = DICT[run]["errors"] + f"\n# error logs dl1 {str_dchecks[:-1]}" + log_errors + "\n"
             except KeyError:
-                DICT[run]["errors"] = log_errors + "\n"
+                DICT[run]["errors"] =  f"# error logs dl1 {str_dchecks[:-1]}" + log_errors + "\n"
+        else:
+            DICT[run]["errors"] = ""
                 
     print(f"...Finished adding dl1 data to dictionary")
     return DICT
