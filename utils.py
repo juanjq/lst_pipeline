@@ -1,6 +1,6 @@
 import numpy as np
 import glob
-
+import os
 
 
 def add_dl1_paths_to_dict(DICT, dl1_root, dchecking=False):
@@ -112,3 +112,67 @@ def add_dl1_paths_to_dict(DICT, dl1_root, dchecking=False):
                 
     print(f"...Finished adding dl1 data to dictionary")
     return DICT
+
+
+def angular_dist(az1, az2):
+    """
+    Angular distance for azimuths where az=0 is the same as az=360
+    """
+    angular_distance_abs = abs(az1 - az2)
+    return min(angular_distance_abs, 360 - angular_distance_abs)
+
+def add_mc_and_rfs_nodes(DICT, rfs_root, mcs_root, dict_source):
+
+    """
+    
+    """
+    
+    # finding the RF nodes in DEC
+    rfs_decs = os.listdir(rfs_root)
+    rf_nodes_dec = np.array([float(d.split("_")[-1][:-2] + "." + d.split("_")[-1][-2:]) for d in rfs_decs])
+
+    dist_rfs = np.abs(rf_nodes_dec - dict_source["dec"].value)
+    closest_rf_node = rfs_decs[np.argmin(dist_rfs)]
+
+    # and the MC nodes in AZ ZD
+    mcs_decs = os.listdir(mcs_root)
+    mc_nodes_dec = [float(d.split("_")[-1][:-2] + "." + d.split("_")[-1][-2:]) for d in mcs_decs]
+
+    dist_mc_dec = np.abs(mc_nodes_dec - dict_source["dec"].value)
+    closest_mc_dec_node = rfs_decs[np.argmin(dist_mc_dec)]
+
+    nodes = np.array(os.listdir(mcs_root + mcs_decs[0]))
+    zds = np.array([float(n.split("_")[2]) for n in nodes])
+    azs = np.array([float(n.split("_")[4]) for n in nodes])
+
+    for run in DICT.keys():
+        _zd = DICT[run]["pointing"]["zd"]
+        _az = DICT[run]["pointing"]["az"]
+
+        dist_mcs_zd = np.abs(zds - _zd)
+
+        zd_closest_node = zds[np.argmin(dist_mcs_zd)]
+
+        mask_zd  = (zds == zd_closest_node)
+        nodes_zd = nodes[mask_zd]
+        zds_zd   = zds[mask_zd]
+        azs_zd   = azs[mask_zd]
+
+        dist_mcs_az = np.array([angular_dist(azs_zd[i], _az) for i in range(len(azs_zd))])
+
+        closest_node = nodes[np.argmin(dist_mcs_az)]
+
+        DICT[run]["paths"] = {
+            "rf" : mcs_root + closest_mc_dec_node + "/" + closest_node,
+            "mc" : rfs_root + closest_rf_node,
+        }
+        
+    dict_nodes = {
+        "dec" : mc_nodes_dec,
+        "pointing" : {
+            "az" : azs,
+            "zd" : zds,
+        },
+    }
+        
+    return DICT, dict_nodes
