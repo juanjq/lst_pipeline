@@ -17,9 +17,10 @@ def add_dl1_paths_to_dict(DICT, dl1_root, dchecking=False):
     str_dchecks = "" if not dchecking else "datacheck_"
     log_errors  = ""
     print(f"\nAdding dl1 {str_dchecks[:-1]} data to dictionary...")
-    
-    total_dl1a_runwise      = glob.glob(dl1_root + f"{str_dchecks}dl1_LST-1.Run?????.h5")
-    total_dl1a_subrunwise   = glob.glob(dl1_root + f"{str_dchecks}dl1_LST-1.Run?????.????.h5")
+
+    main_name = f"{str_dchecks}dl1_LST-1.Run?????"
+    total_dl1a_runwise    = glob.glob(dl1_root + "*/" + f"{main_name}.h5")      + glob.glob(dl1_root + f"{main_name}.h5")
+    total_dl1a_subrunwise = glob.glob(dl1_root + "*/" + f"{main_name}.????.h5") + glob.glob(dl1_root + f"{main_name}.????.h5")
     # print(f"DL1 files:  Found {len(total_dl1a_runwise):4} run-wise and {len(total_dl1a_subrunwise):6} subrun-wise")
     # print(f"Datachecks: Found {len(total_dcheck_runwise):4} run-wise and {len(total_dcheck_subrunwise):6}  subrun_wise\n")
 
@@ -27,7 +28,7 @@ def add_dl1_paths_to_dict(DICT, dl1_root, dchecking=False):
         # checking for files of this certain run
         runfiles = []
         for rf in total_dl1a_runwise:
-            if str(run) in rf:
+            if f"{run:05}" in rf:
                 runfiles.append(rf)
 
         # checking runs we have, not, or we have duplicated
@@ -91,8 +92,8 @@ def add_dl1_paths_to_dict(DICT, dl1_root, dchecking=False):
             subrun_paths = []
 
         # checking if the branch of dict exists
+        str_dchecks_dict = "dl1a" if not dchecking else "dchecks"
         try: 
-            str_dchecks_dict = "dl1" if not dchecking else "dchecks"
             DICT[run][str_dchecks_dict]["runwise"]    = run_path
             DICT[run][str_dchecks_dict]["srunwise"] = subrun_paths
         except KeyError:
@@ -162,9 +163,9 @@ def add_mc_and_rfs_nodes(DICT, rfs_root, mcs_root, dict_source):
 
         closest_node = nodes[np.argmin(dist_mcs_az)]
 
-        DICT[run]["paths"] = {
-            "rf" : mcs_root + closest_mc_dec_node + "/" + closest_node,
-            "mc" : rfs_root + closest_rf_node,
+        DICT[run]["simulations"] = {
+            "mc" : mcs_root + closest_mc_dec_node + "/" + closest_node,
+            "rf" : rfs_root + closest_rf_node,
         }
         
     dict_nodes = {
