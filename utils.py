@@ -1,7 +1,7 @@
 import numpy as np
 import glob
 import os
-
+import sys
 
 def add_dl1_paths_to_dict(DICT, dl1_root, dchecking=False):
     """
@@ -163,11 +163,23 @@ def add_mc_and_rfs_nodes(DICT, rfs_root, mcs_root, dict_source):
 
         closest_node = nodes[np.argmin(dist_mcs_az)]
 
+        # now looking inside the folder to find the MC .h5 file
+        mc_fnames = glob.glob(mcs_root + closest_mc_dec_node + "/" + closest_node + "/*.h5")
+        if len(mc_fnames) == 0:
+            sys.exit("ERROR: no MC files found inside {}".format(mcs_root + closest_mc_dec_node + "/" + closest_node))
+        elif len(mc_fnames) > 1:
+            print("WARNING: MC path {} presented {} .h5 files:".format(closest_mc_dec_node + "/" + closest_node, len(mc_fnames)))
+            for f in mc_fnames:
+                selected = "(SELECTED)" if i == 0 else ""
+                print(f"--> {f} {selected}")
+
+        mc_fname = mc_fnames[0]
+
         DICT[run]["simulations"] = {
-            "mc" : mcs_root + closest_mc_dec_node + "/" + closest_node,
+            "mc" : mc_fname,
             "rf" : rfs_root + closest_rf_node,
         }
-        
+
     dict_nodes = {
         "dec" : mc_nodes_dec,
         "pointing" : {
@@ -175,5 +187,5 @@ def add_mc_and_rfs_nodes(DICT, rfs_root, mcs_root, dict_source):
             "zd" : zds,
         },
     }
-        
+
     return DICT, dict_nodes
