@@ -95,11 +95,16 @@ def add_dl1_paths_to_dict(DICT, dl1_root, dchecking=False):
                         subrun_paths.append(subrunfiles[version_index])
                     else:
                         subrun_paths.append(subrunfiles[fi])
-
-
+                        
+                except ValueError:
+                    error = f"ERROR: Subrun {i:04} not found in {dl1_root}"
+                    log_errors = log_errors + "\n" + error
+                    print(error)
+                    subrun_paths.append(None)
+                    
             versions = []
             for i, runfile in enumerate(runfiles):
-                versions.append(int(runfile.split("\")[6].split(".")[0][1:]))
+                versions.append(int(runfile.split("/")[6].split(".")[0][1:]))
             version_index = np.argmax(versions)
             for i, runfile in enumerate(runfiles):
                 selected = "(SELECTED)" if i == version_index else ""
@@ -108,18 +113,7 @@ def add_dl1_paths_to_dict(DICT, dl1_root, dchecking=False):
                 print(warning)
 
                 run_path  = runfiles[version_index]
-
-
-
-
-
-                        
-                except ValueError:
-                    error = f"ERROR: Subrun {i:04} not found in {dl1_root}"
-                    log_errors = log_errors + "\n" + error
-                    print(error)
-                    subrun_paths.append(None)
-
+                
         else:
             subrun_paths = []
 
