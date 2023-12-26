@@ -5,15 +5,17 @@ import sys
 
 def add_dl1_paths_to_dict(DICT, dl1_root, dchecking=False):
     """
-    Function to add a DICT with run numbers, the respective paths associated to dl1
-    for run and subrun
-    Input:
-    - DICT      --> The dictionary
-    - dl1_root  --> The path string where all dl1 data is inside (with possibility of using *)
-                    format example: "/fefs/aswg/data/real/DL1/*/v*/tailcut84/"
-    - dchecking --> Boolean for extracting the paths for datachecks or for normal files
-    """
+    Add DL1 file paths to a dictionary.
 
+    Args:
+        DICT (dict): The dictionary to which the DL1 file paths will be added.
+        dl1_root (str): The root directory of the DL1 files.
+        dchecking (bool, optional): Whether to perform data checking. Defaults to False.
+
+    Returns:
+        dict: The updated dictionary with DL1 file paths added.
+
+    """
     str_dchecks = "" if not dchecking else "datacheck_"
     log_errors  = ""
     print(f"\nAdding dl1 {str_dchecks[:-1]} data to dictionary...")
@@ -143,15 +145,30 @@ def add_dl1_paths_to_dict(DICT, dl1_root, dchecking=False):
 
 def angular_dist(az1, az2):
     """
-    Angular distance for azimuths where az=0 is the same as az=360
+    Calculate the angular distance between two azimuth angles.
+
+    Parameters:
+    az1 (float): The first azimuth angle in degrees.
+    az2 (float): The second azimuth angle in degrees.
+
+    Returns:
+    float: The angular distance between the two azimuth angles.
     """
     angular_distance_abs = abs(az1 - az2)
     return min(angular_distance_abs, 360 - angular_distance_abs)
 
 def add_mc_and_rfs_nodes(DICT, rfs_root, mcs_root, dict_source):
-
     """
-    
+    Add MC and RF nodes to the given dictionary.
+
+    Parameters:
+    - DICT (dict): The dictionary to which the MC and RF nodes will be added.
+    - rfs_root (str): The root directory of the RF nodes.
+    - mcs_root (str): The root directory of the MC nodes.
+    - dict_source (dict): The dictionary containing the source information.
+
+    Returns:
+    - tuple: A tuple containing the updated dictionary (DICT) and a dictionary of nodes (dict_nodes).
     """
     
     # finding the RF nodes in DEC
@@ -195,8 +212,8 @@ def add_mc_and_rfs_nodes(DICT, rfs_root, mcs_root, dict_source):
             sys.exit("ERROR: no MC files found inside {}".format(mcs_root + closest_mc_dec_node + "/" + closest_node))
         elif len(mc_fnames) > 1:
             print("WARNING: MC path {} presented {} .h5 files:".format(closest_mc_dec_node + "/" + closest_node, len(mc_fnames)))
-            for f in mc_fnames:
-                selected = "(SELECTED)" if i == 0 else ""
+            for idf, f in enumerate(mc_fnames):
+                selected = "(SELECTED)" if idf == 0 else ""
                 print(f"--> {f} {selected}")
 
         mc_fname = mc_fnames[0]
@@ -216,6 +233,15 @@ def add_mc_and_rfs_nodes(DICT, rfs_root, mcs_root, dict_source):
 
     return DICT, dict_nodes
 
-def sort_based(reference, array):
-    
-    return np.array([x for _,x in sorted(zip(reference, array))])
+def sort_based(x_array, ref_array):
+    """
+    Sorts the array ref_array in ascending order and rearranges the array x_array based on the sorted ref_array values.
+
+    Parameters:
+    x_array (array-like): The array to be rearranged based on ref_array.
+    ref_array (array-like): The reference array used for sorting.
+
+    Returns:
+    tuple: A tuple containing two arrays. The first array is the sorted ref_array, and the second array is x_array rearranged based on the sorted ref_array values.
+    """
+    return np.sort(ref_array), np.array([x for ref, x in sorted(zip(ref_array, x_array))])

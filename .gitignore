@@ -1,5 +1,8 @@
-.ipynb_checkpoints/
-__pycache__/
+# Not storing plots
 **/plots/*
+*.png
+# Not storing temporal jupyter files
+**/__pycache__/*
+**/.ipynb_checkpoints/*
+# Not storing save-state of objects
 **/objects/*
-*.log
