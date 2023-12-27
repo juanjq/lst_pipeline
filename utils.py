@@ -21,123 +21,96 @@ def add_dl1_paths_to_dict(DICT, dl1_root, dchecking=False):
     print(f"\nAdding dl1 {str_dchecks[:-1]} data to dictionary...")
 
     main_name = f"{str_dchecks}dl1_LST-1.Run?????"
+    # Finding all datacheck files for run-wise and subrun-wise
     total_dl1a_runwise    = glob.glob(dl1_root + "*/" + f"{main_name}.h5")      + glob.glob(dl1_root + f"{main_name}.h5")
     total_dl1a_subrunwise = glob.glob(dl1_root + "*/" + f"{main_name}.????.h5") + glob.glob(dl1_root + f"{main_name}.????.h5")
     # print(f"DL1 files:  Found {len(total_dl1a_runwise):4} run-wise and {len(total_dl1a_subrunwise):6} subrun-wise")
     # print(f"Datachecks: Found {len(total_dcheck_runwise):4} run-wise and {len(total_dcheck_subrunwise):6}  subrun_wise\n")
 
     for run in DICT.keys():
-        # checking for files of this certain run
+        # Checking for files of this certain run
         runfiles = []
         for rf in total_dl1a_runwise:
             if f"{run:05}" in rf:
                 runfiles.append(rf)
 
-        # checking runs we have, not, or we have duplicated
-        if len(runfiles) > 1:
-            warning = f"WARNING: Run {run:5} presented {len(runfiles)} files:"
-            log_errors = log_errors + "\n" + warning 
-            print(warning)
+        # Checking runs we have, not, or we have duplicated
+        if len(runfiles) == 0:
+            raise ValueError(f"Run {run:5} not found in {dl1_root}")
+        
+        elif len(runfiles) > 1:
+            print(f"WARNING: Run {run:5} presented {len(runfiles)} files:")
             versions = []
             for i, runfile in enumerate(runfiles):
                 versions.append(int(runfile.split("/")[6].split(".")[0][1:]))
             version_index = np.argmax(versions)
             for i, runfile in enumerate(runfiles):
                 selected = "(SELECTED)" if i == version_index else ""
-                warning = f"--> {runfile} {selected}"
-                log_errors = log_errors + "\n" + warning 
-                print(warning)
+                print(f"--> {runfile} {selected}")
 
                 run_path  = runfiles[version_index]
-        if len(runfiles) == 0:
-            error = f"ERROR: Run {run:5} not found in {dl1_root}"
-            log_errors = log_errors + "\n" + error
-            print(error)
-            run_path = None
+
         else:
             run_path  = runfiles[0]        
 
-        # checking subruns
-        subrunfiles = []
-        _subrun_num  = []
+        # Checking subruns
+        _subrun_files, _subrun_num = [], []
         for f in total_dl1a_subrunwise:
             if f"{run:05}" in f:
-                subrunfiles.append(f)
+                _subrun_files.append(f)
                 _subrun_num.append(int(f.split(".")[-2]))
-        subrun_num  = sorted(_subrun_num)
-        subrunfiles = sort_based(_subrun_num, subrunfiles)
+        
+        # Sorting subruns
+        subrun_num, subrun_files = sort_based(_subrun_num, _subrun_files)
 
         # first we make sure there is at least one subrun
-        if len(subrunfiles) > 0:
+        if len(subrun_files) == 0:
+            raise ValueError(f"No subrun found in {dl1_root}.")    
 
-            # checking we have all subruns, or if some is repeated
-            subrun_paths = []
-            for i in range(subrun_num[-1]+1):
+        # checking we have all subruns, or if some is repeated
+        _subrun_dict_ = {}
+        for i in range(subrun_num[-1]+1):
+            _subrun_dict_[i] = []
 
-                try:
-                    fi = subrun_num.index(i)
-                    n_coincidences = np.sum(np.array(subrun_num) == i)
-                    if n_coincidences > 1:
-                        
-                        warning = f"WARNING: Subrun {i:04} presented {n_coincidences} files:"
-                        log_errors = log_errors + "\n" + warning
-                        print(warning)
-                        
-                        versions = []
-                        for i, srunfile in enumerate(subrunfiles):
-                            versions.append(int(srunfile.split("/")[6].split(".")[0][1:]))   
-                        version_index = np.argmax(versions)
-                        
-                        for j, subrunfile in enumerate(subrunfiles[np.array(subrun_num) == i]):
-                            selected = "(SELECTED)" if j == 0 else ""
-                            warning = f"--> {subrunfile} {selected}"
-                            log_errors = log_errors + "\n" + warning
-                            print(warning)        
+        for i, srunfile in enumerate(subrun_files):
+            subrun = subrun_num[i]
+            _subrun_dict_[subrun].append(srunfile)
 
-                        subrun_paths.append(subrunfiles[version_index])
-                    else:
-                        subrun_paths.append(subrunfiles[fi])
-                        
-                except ValueError:
-                    error = f"ERROR: Subrun {i:04} not found in {dl1_root}"
-                    log_errors = log_errors + "\n" + error
-                    print(error)
-                    subrun_paths.append(None)
-                    
-            versions = []
-            for i, runfile in enumerate(runfiles):
-                versions.append(int(runfile.split("/")[6].split(".")[0][1:]))
-            version_index = np.argmax(versions)
-            for i, runfile in enumerate(runfiles):
-                selected = "(SELECTED)" if i == version_index else ""
-                warning = f"--> {runfile} {selected}"
-                log_errors = log_errors + "\n" + warning 
-                print(warning)
+        # Check if there is more than one file associated with the same subrun
+        subrun_dict  = {} # this will be the final dict with only one file per subrun
+        subrun_paths = []
+        for subrun, files in _subrun_dict_.items():
 
-                run_path  = runfiles[version_index]
-                
-        else:
-            subrun_paths = []
+            if len(files) == 0:
+                raise ValueError(f"Subrun {subrun:04} not found in {dl1_root}.")
+            elif len(files) > 1:
+                print(f"WARNING: Subrun {subrun:04} presented {len(files)} files:")
 
+                versions = []
+                for i, srunfile in enumerate(files):
+                    versions.append(int(srunfile.split("/")[6].split(".")[0][1:]))
+                version_index = np.argmax(versions)
+
+                for i, subrunfile in enumerate(files):
+                    selected = "(SELECTED)" if i == version_index else ""
+                    print(f"--> {subrunfile} {selected}")
+
+                    subrun_dict[subrun] = files[version_index]
+                    subrun_paths.append(files[version_index])
+            else:
+                subrun_dict[subrun] = files[0]
+                subrun_paths.append(files[0])
+        
         # checking if the branch of dict exists
         str_dchecks_dict = "dl1a" if not dchecking else "dchecks"
         try: 
-            DICT[run][str_dchecks_dict]["runwise"]    = run_path
+            DICT[run][str_dchecks_dict]["runwise"]  = run_path
             DICT[run][str_dchecks_dict]["srunwise"] = subrun_paths
         except KeyError:
             DICT[run][str_dchecks_dict] = {
                 "runwise"  : run_path, 
                 "srunwise" : subrun_paths,
             }
-
-        # adding a log error if do not exist in the case that there has been errors
-        if log_errors != "":
-            try:
-                DICT[run]["errors"] = DICT[run]["errors"] + f"\n# error logs dl1 {str_dchecks[:-1]}" + log_errors + "\n"
-            except KeyError:
-                DICT[run]["errors"] =  f"# error logs dl1 {str_dchecks[:-1]}" + log_errors + "\n"
-        else:
-            DICT[run]["errors"] = ""
                 
     print(f"...Finished adding dl1 data to dictionary")
     return DICT
