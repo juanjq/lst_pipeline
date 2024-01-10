@@ -61,7 +61,7 @@ def add_dl1_paths_to_dict(DICT, dl1_root, dchecking=False):
                 _subrun_num.append(int(f.split(".")[-2]))
         
         # Sorting subruns
-        subrun_num, subrun_files = sort_based(_subrun_num, _subrun_files)
+        subrun_num, subrun_files = sort_based( _subrun_files, _subrun_num)
 
         # first we make sure there is at least one subrun
         if len(subrun_files) == 0:
