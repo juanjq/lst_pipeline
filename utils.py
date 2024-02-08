@@ -3,6 +3,11 @@ import glob
 import os
 import sys
 
+import logging
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.INFO)
+
 def add_dl1_paths_to_dict(DICT, dl1_root, dchecking=False):
     """
     Add DL1 file paths to a dictionary.
@@ -18,14 +23,14 @@ def add_dl1_paths_to_dict(DICT, dl1_root, dchecking=False):
     """
     str_dchecks = "" if not dchecking else "datacheck_"
     log_errors  = ""
-    print(f"\nAdding dl1 {str_dchecks[:-1]} data to dictionary...")
+    logger.info(f"\nAdding dl1 {str_dchecks[:-1]} data to dictionary...")
 
     main_name = f"{str_dchecks}dl1_LST-1.Run?????"
     # Finding all datacheck files for run-wise and subrun-wise
     total_dl1a_runwise    = glob.glob(dl1_root + "*/" + f"{main_name}.h5")      + glob.glob(dl1_root + f"{main_name}.h5")
     total_dl1a_subrunwise = glob.glob(dl1_root + "*/" + f"{main_name}.????.h5") + glob.glob(dl1_root + f"{main_name}.????.h5")
-    # print(f"DL1 files:  Found {len(total_dl1a_runwise):4} run-wise and {len(total_dl1a_subrunwise):6} subrun-wise")
-    # print(f"Datachecks: Found {len(total_dcheck_runwise):4} run-wise and {len(total_dcheck_subrunwise):6}  subrun_wise\n")
+    # logger.info(f"DL1 files:  Found {len(total_dl1a_runwise):4} run-wise and {len(total_dl1a_subrunwise):6} subrun-wise")
+    # logger.info(f"Datachecks: Found {len(total_dcheck_runwise):4} run-wise and {len(total_dcheck_subrunwise):6}  subrun_wise\n")
 
     for run in DICT.keys():
         # Checking for files of this certain run
@@ -39,14 +44,14 @@ def add_dl1_paths_to_dict(DICT, dl1_root, dchecking=False):
             raise ValueError(f"Run {run:5} not found in {dl1_root}")
         
         elif len(runfiles) > 1:
-            print(f"WARNING: Run {run:5} presented {len(runfiles)} files:")
+            logger.warning(f"Run {run:5} presented {len(runfiles)} files:")
             versions = []
             for i, runfile in enumerate(runfiles):
-                versions.append(int(runfile.split("/")[6].split(".")[0][1:]))
+                versions.append(float(runfile.split("/")[7].split(".")[0][1:] + "." + runfile.split("/")[7].split(".")[1][0]))                
             version_index = np.argmax(versions)
             for i, runfile in enumerate(runfiles):
                 selected = "(SELECTED)" if i == version_index else ""
-                print(f"--> {runfile} {selected}")
+                logger.info(f"--> {runfile} {selected}")
 
                 run_path  = runfiles[version_index]
 
@@ -84,16 +89,16 @@ def add_dl1_paths_to_dict(DICT, dl1_root, dchecking=False):
             if len(files) == 0:
                 raise ValueError(f"Subrun {subrun:04} not found in {dl1_root}.")
             elif len(files) > 1:
-                print(f"WARNING: Subrun {subrun:04} presented {len(files)} files:")
+                logger.warning(f"Subrun {subrun:04} presented {len(files)} files:")
 
                 versions = []
                 for i, srunfile in enumerate(files):
-                    versions.append(int(srunfile.split("/")[6].split(".")[0][1:]))
+                    versions.append(float(runfile.split("/")[7].split(".")[0][1:] + "." + runfile.split("/")[7].split(".")[1][0])) 
                 version_index = np.argmax(versions)
 
                 for i, subrunfile in enumerate(files):
                     selected = "(SELECTED)" if i == version_index else ""
-                    print(f"--> {subrunfile} {selected}")
+                    logger.info(f"--> {subrunfile} {selected}")
 
                     subrun_dict[subrun] = files[version_index]
                     subrun_paths.append(files[version_index])
@@ -112,7 +117,7 @@ def add_dl1_paths_to_dict(DICT, dl1_root, dchecking=False):
                 "srunwise" : subrun_paths,
             }
                 
-    print(f"...Finished adding dl1 data to dictionary")
+    logger.info(f"...Finished adding dl1 data to dictionary")
     return DICT
 
 
@@ -184,10 +189,10 @@ def add_mc_and_rfs_nodes(DICT, rfs_root, mcs_root, dict_source):
         if len(mc_fnames) == 0:
             sys.exit("ERROR: no MC files found inside {}".format(mcs_root + closest_mc_dec_node + "/" + closest_node))
         elif len(mc_fnames) > 1:
-            print("WARNING: MC path {} presented {} .h5 files:".format(closest_mc_dec_node + "/" + closest_node, len(mc_fnames)))
+            logger.warning("MC path {} presented {} .h5 files:".format(closest_mc_dec_node + "/" + closest_node, len(mc_fnames)))
             for idf, f in enumerate(mc_fnames):
                 selected = "(SELECTED)" if idf == 0 else ""
-                print(f"--> {f} {selected}")
+                logger.info(f"--> {f} {selected}")
 
         mc_fname = mc_fnames[0]
 
@@ -215,6 +220,7 @@ def sort_based(x_array, ref_array):
     ref_array (array-like): The reference array used for sorting.
 
     Returns:
-    tuple: A tuple containing two arrays. The first array is the sorted ref_array, and the second array is x_array rearranged based on the sorted ref_array values.
+    tuple: A tuple containing two arrays. The first array is the sorted ref_array, and the second array is x_array 
+    rearranged based on the sorted ref_array values.
     """
     return np.sort(ref_array), np.array([x for ref, x in sorted(zip(ref_array, x_array))])
