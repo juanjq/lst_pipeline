@@ -23,7 +23,6 @@ def add_dl1_paths_to_dict(DICT, dl1_root, dchecking=False):
     """
     str_dchecks = "" if not dchecking else "datacheck_"
     log_errors  = ""
-    logger.info(f"\nAdding dl1 {str_dchecks[:-1]} data to dictionary...")
 
     main_name = f"{str_dchecks}dl1_LST-1.Run?????"
     # Finding all datacheck files for run-wise and subrun-wise
@@ -33,6 +32,9 @@ def add_dl1_paths_to_dict(DICT, dl1_root, dchecking=False):
     # logger.info(f"Datachecks: Found {len(total_dcheck_runwise):4} run-wise and {len(total_dcheck_subrunwise):6}  subrun_wise\n")
 
     for run in DICT.keys():
+
+        logger.info(f"\nAdding dl1 {str_dchecks[:-1]} data to dictionary (Run {run})...")
+        
         # Checking for files of this certain run
         runfiles = []
         for rf in total_dl1a_runwise:
@@ -44,16 +46,25 @@ def add_dl1_paths_to_dict(DICT, dl1_root, dchecking=False):
             raise ValueError(f"Run {run:5} not found in {dl1_root}")
         
         elif len(runfiles) > 1:
-            logger.warning(f"Run {run:5} presented {len(runfiles)} files:")
+            logger.debug(f"Run {run:5} presented {len(runfiles)} files:")
             versions = []
             for i, runfile in enumerate(runfiles):
-                versions.append(float(runfile.split("/")[7].split(".")[0][1:] + "." + runfile.split("/")[7].split(".")[1][0]))                
+                str_version = runfile.split("/")[7][1:]
+                str_parts = str_version.split(".")
+                str_parts_float = [float(''.join(filter(str.isdigit, str_parts[iii]))) for iii in range(len(str_parts))]
+                for pi, part in enumerate(str_parts_float):
+                    if pi == 0:
+                        final_str = f"{part:04.0f}."
+                    else:
+                        final_str = final_str + f"{part:04.0f}"                
+                versions.append(float(final_str)) 
             version_index = np.argmax(versions)
+            
             for i, runfile in enumerate(runfiles):
                 selected = "(SELECTED)" if i == version_index else ""
-                logger.info(f"--> {runfile} {selected}")
+                logger.debug(f"--> {runfile} {selected}")
 
-                run_path  = runfiles[version_index]
+            run_path  = runfiles[version_index]
 
         else:
             run_path  = runfiles[0]        
@@ -89,19 +100,27 @@ def add_dl1_paths_to_dict(DICT, dl1_root, dchecking=False):
             if len(files) == 0:
                 raise ValueError(f"Subrun {subrun:04} not found in {dl1_root}.")
             elif len(files) > 1:
-                logger.warning(f"Subrun {subrun:04} presented {len(files)} files:")
+                logger.debug(f"Subrun {subrun:04} presented {len(files)} files:")
 
                 versions = []
                 for i, srunfile in enumerate(files):
-                    versions.append(float(runfile.split("/")[7].split(".")[0][1:] + "." + runfile.split("/")[7].split(".")[1][0])) 
+                    str_version = srunfile.split("/")[7][1:]
+                    str_parts = str_version.split(".")
+                    str_parts_float = [float(''.join(filter(str.isdigit, str_parts[iii]))) for iii in range(len(str_parts))]
+                    for pi, part in enumerate(str_parts_float):
+                        if pi == 0:
+                            final_str = f"{part:04.0f}."
+                        else:
+                            final_str = final_str + f"{part:04.0f}"                
+                    versions.append(float(final_str)) 
                 version_index = np.argmax(versions)
 
                 for i, subrunfile in enumerate(files):
                     selected = "(SELECTED)" if i == version_index else ""
-                    logger.info(f"--> {subrunfile} {selected}")
+                    logger.debug(f"--> {subrunfile} {selected}")
 
-                    subrun_dict[subrun] = files[version_index]
-                    subrun_paths.append(files[version_index])
+                subrun_dict[subrun] = files[version_index]
+                subrun_paths.append(files[version_index])
             else:
                 subrun_dict[subrun] = files[0]
                 subrun_paths.append(files[0])
